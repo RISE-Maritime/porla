@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+"""
+Command line utility tool for processing input from stdin. Each line on the
+input stream is base64 encoded with no wrapping and ended with a newline.
+"""
+
+import sys
+import argparse
+from base64 import b64encode, b64decode
+
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--encode", action="store_true", default=False)
+group.add_argument("--decode", action="store_true", default=False)
+
+args = parser.parse_args()
+
+if args.encode:
+    for line in sys.stdin:
+        sys.stdout.write(b64encode(line.encode()).decode() + "\n")
+        sys.stdout.flush()
+
+else:
+    for line in sys.stdin:
+        sys.stdout.write(b64decode(line.encode()).decode())
+        sys.stdout.flush()
