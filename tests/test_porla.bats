@@ -6,7 +6,6 @@ load "bats-helpers/bats-file/load"
 
 setup_file() {
     REPO_ROOT="$( cd "$( dirname "$BATS_TEST_FILENAME" )"/.. >/dev/null 2>&1 && pwd )"
-    echo "$REPO_ROOT" >&3
     docker build -t porla "$REPO_ROOT"
 }
 
@@ -26,7 +25,7 @@ teardown() {
 }
 
 
-@test "Single bus writer/listener" {
+@test "Single writer/listener pair on bus" {
     bats_require_minimum_version 1.5.0
 
     docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out.txt"

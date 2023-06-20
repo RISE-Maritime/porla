@@ -1,12 +1,16 @@
 # porla
 **P**ipeline-**O**riented **R**eal-time **L**ogging **A**ssistant or simply a basic toolbox for handling of line-based streaming data using linux pipes and some handy command-line utilities
 
-    "porla" is also a Swedish word for the soothing sound of running water from a small stream stream, typically set in an enchanted forest.
+> "porla" is also a Swedish word for the soothing sound of running water from a small stream of water
 
-## Motivation, purpose and mental map
+## Motivation and purpose
 
+TODO
+
+## Schematic overview
 
 ![schematic](./porla.svg)
+
 
 ## Usage
 
