@@ -52,7 +52,7 @@ services:
 
 * **jsonify**
 
-  TODO
+  Parses each line according to a `parse` format specification (see https://github.com/r1chardj0n3s/parse#format-syntax). Expects a single argument, the `format specification`.
 
 * **timestamp**
 
@@ -61,6 +61,10 @@ services:
 * **udp_listen**
 
   WIP
+
+* **mqtt**
+
+  See https://github.com/MO-RISE/mqtt-cli
 
 ### Examples
 
