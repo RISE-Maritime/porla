@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+"""
+Command line utility tool for processing input from stdin. Each line on the
+input stream is parsed according to the input specification provided by the user
+and written to stdout according to the output specification
+"""
+
+# pylint: disable=duplicate-code
+
+import sys
+import logging
+import warnings
+import argparse
+
+import parse
+
+# Parse cli arguments
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--log-level", type=lambda level: getattr(logging, level), default=logging.WARNING
+)
+parser.add_argument(
+    "input_specification",
+    type=str,
+    help="Example: '{timestamp} {data}',"
+    "See https://github.com/r1chardj0n3s/parse#format-specification",
+)
+parser.add_argument(
+    "output_specification",
+    type=str,
+    help="Example: '{data}',"
+    "See https://github.com/r1chardj0n3s/parse#format-specification",
+)
+
+args = parser.parse_args()
+
+# Setup logger
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(name)s %(message)s", level=args.log_level
+)
+logging.captureWarnings(True)
+warnings.filterwarnings("once")
+
+logger = logging.getLogger("shuffle")
+
+
+# Compile pattern
+input_pattern = parse.compile(args.input_specification)
+
+# Start processing
+for line in sys.stdin:
+    logger.debug(line)
+    res = input_pattern.parse(line.rstrip())
+
+    if not res:
+        logger.error(
+            "Could not parse line: %s according to the input_specification: %s",
+            line,
+            args.input_specification,
+        )
+        continue
+
+    sys.stdout.write(args.output_specification.format(**res.named) + "\n")
+    sys.stdout.flush()

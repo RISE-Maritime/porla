@@ -36,15 +36,11 @@ services:
 
 * **to_bus** and **from_bus**
 
-  Pipes data to or from the `bus`, Expects a single argument, the `bus_id`.
+  Pipes data to or from the `bus`. Expects a single argument, the `bus_id`.
 
 * **record**
 
   Records (appends) data from STDIN to a file. Expects a single argument, the `file_path`.
-
-* **branch**
-
-  Branch the pipe at this place. Takes any number of arguments and execute those in the newly created branch.
 
 * **b64**
 
@@ -58,13 +54,15 @@ services:
 
   Prepends a timestamp  to each line. The timestamp is either the unix epoch (`--epoch`) or in rfc3339 format (`--rfc3339`)
 
-* **udp_listen**
+* **shuffle**
 
-  WIP
+  Rearrange, deduct or add content to each line using two (one for the input and one for the output) format specifications. Expects two arguments, the `input_format_specification` and the `output_format_specification`.
 
-* **mqtt**
+### 3rd-party tools
 
-  See https://github.com/MO-RISE/mqtt-cli
+* **socat**
+
+  https://linux.die.net/man/1/socat
 
 ### Examples
 
@@ -100,13 +98,7 @@ services:
         image: ghcr.io/mo-rise/porla
         network_mode: host
         restart: always
-        command: ["from_bus 3 | mqtt publish -t another/topic"]
-
-    sink_2:
-        image: ghcr.io/mo-rise/porla
-        network_mode: host
-        restart: always
-        command: ["from_bus 3 | socat STDIN UDP4-DATAGRAM:1458"]
+        command: ["from_bus 4 | socat STDIN UDP4-DATAGRAM:1458"]
 
     record_1:
         image: ghcr.io/mo-rise/porla
@@ -140,3 +132,13 @@ services:
             - ./recordings:/recordings
         command: ["from_bus 4 | record /recordings/bus_id_4.log"]
 ```
+
+## Extensibility
+
+Build a docker image using the `porla`image as the base image and add any required binaries. Name the docker image `porla-<extension_name>`.
+
+See for example:
+
+* `porla-mqtt`
+* `porla-nmea`
+* `porla-pontos`

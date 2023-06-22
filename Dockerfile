@@ -1,11 +1,7 @@
 FROM python:3.11-slim-bullseye
 
 RUN apt-get update && apt-get install -y \
-    netcat-openbsd \
     socat \
-    mosquitto-clients \
-    jq \
-    jo \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
