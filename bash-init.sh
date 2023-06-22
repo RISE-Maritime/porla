@@ -16,8 +16,3 @@ function record () {
     tee -a "$1" > /dev/null
 }
 export record
-
-function branch () {
-    tee >("$@")
-}
-export branch
