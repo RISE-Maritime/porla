@@ -7,10 +7,19 @@
 
 TODO
 
-## Schematic overview
+## Overview
+
+### Schematic
 
 ![schematic](./porla.svg)
 
+### Tech stack
+
+TODO
+
+### Performance
+
+TODO
 
 ## Usage
 
@@ -57,6 +66,10 @@ services:
 * **shuffle**
 
   Rearrange, deduct or add content to each line using two (one for the input and one for the output) format specifications. Expects two arguments, the `input_format_specification` and the `output_format_specification`.
+
+* **limit**
+
+  Rate limit the flow through a pipe on a line-by-line basis. Expects a single required argument, `interval`, and an optional argument, `--key` with a format specification of how to find the key of each line whereby to "group" the flow.
 
 ### 3rd-party tools
 
