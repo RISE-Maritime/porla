@@ -76,29 +76,23 @@ services:
         restart: always
         command: ["socat UDP4-RECV:1457,reuseaddr STDOUT | timestamp | to_bus 1"]
 
-    source_2:
-        image: ghcr.io/mo-rise/porla
-        network_mode: host
-        restart: always
-        command: ["mqtt subscribe -t my/topic/# | timestamp | to_bus 2"]
-
     transform_1:
         image: ghcr.io/mo-rise/porla
         network_mode: host
         restart: always
-        command: ["from_bus 1 | jsonify '{} {name} {value}' | to_bus 3"]
+        command: ["from_bus 1 | jsonify '{} {name} {value}' | to_bus 2"]
 
     transform_2:
         image: ghcr.io/mo-rise/porla
         network_mode: host
         restart: always
-        command: ["from_bus 2 | b64 --encode | to_bus 4"]
+        command: ["from_bus 2 | b64 --encode | to_bus 3"]
 
     sink_1:
         image: ghcr.io/mo-rise/porla
         network_mode: host
         restart: always
-        command: ["from_bus 4 | socat STDIN UDP4-DATAGRAM:1458"]
+        command: ["from_bus 3 | socat STDIN UDP4-DATAGRAM:1458"]
 
     record_1:
         image: ghcr.io/mo-rise/porla
@@ -124,13 +118,6 @@ services:
             - ./recordings:/recordings
         command: ["from_bus 3 | record /recordings/bus_id_3.log"]
 
-    record_4:
-        image: ghcr.io/mo-rise/porla
-        network_mode: host
-        restart: always
-        volumes:
-            - ./recordings:/recordings
-        command: ["from_bus 4 | record /recordings/bus_id_4.log"]
 ```
 
 ## Extensibility
