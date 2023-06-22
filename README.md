@@ -137,8 +137,4 @@ services:
 
 Build a docker image using the `porla`image as the base image and add any required binaries. Name the docker image `porla-<extension_name>`.
 
-See for example:
-
-* `porla-mqtt`
-* `porla-nmea`
-* `porla-pontos`
+For examples, see https://github.com/topics/porla-extension
