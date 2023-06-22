@@ -7,6 +7,7 @@ by the user.
 """
 
 # pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=duplicate-code
 
 import sys
 import time

@@ -6,6 +6,8 @@ input stream is parsed according to the input specification provided by the user
 and written to stdout according to the output specification
 """
 
+# pylint: disable=duplicate-code
+
 import sys
 import logging
 import warnings
