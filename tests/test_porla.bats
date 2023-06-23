@@ -37,3 +37,18 @@ teardown() {
     assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/out.txt
 
 }
+
+@test "Single writer/listener|writer/listener chain on bus" {
+    bats_require_minimum_version 1.5.0
+
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out.txt"
+
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 36 | to_bus 37"
+
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 36"
+
+    assert_exists "$TMP_DIR"/out.txt
+
+    assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/out.txt
+
+}

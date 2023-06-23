@@ -8,7 +8,7 @@ function to_bus () {
 export to_bus
 
 function from_bus () {
-    socat "UDP4-RECV:12737,reuseaddr,ip-add-membership=239.111.42.$1:0.0.0.0" STDOUT
+    socat "UDP4-RECV:12737,bind=239.111.42.$1,reuseaddr,ip-add-membership=239.111.42.$1:0.0.0.0" STDOUT
 }
 export from_bus
 
