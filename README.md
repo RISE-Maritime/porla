@@ -133,8 +133,12 @@ services:
 
 ```
 
-## Extensibility
+## Extensions
 
-Build a docker image using the `porla`image as the base image and add any required binaries. Name the docker image `porla-<extension_name>`.
+Extensions to `porla` are simply other docker images, using the `porla` image as the base image, adding other binaries/command-line tools accessible to the end user. For examples, see https://github.com/topics/porla-extension
 
-For examples, see https://github.com/topics/porla-extension
+Generally, for convenience and to avoid confusion, extensions to `porla` should:
+* be named as `porla-<extension-name>`
+* add the topic `porla-extension` to the repository to be visible in
+
+For a quick and easy start, use the [repository template](https://github.com/MO-RISE/porla-extension-template).
