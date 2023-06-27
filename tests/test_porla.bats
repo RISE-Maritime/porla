@@ -52,3 +52,54 @@ teardown() {
     assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/out.txt
 
 }
+
+@test "Single writer/two listeners on bus" {
+    bats_require_minimum_version 1.5.0
+
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out1.txt"
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out2.txt"
+
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 37"
+
+    assert_exists "$TMP_DIR"/out1.txt
+    assert_exists "$TMP_DIR"/out2.txt
+
+    assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/out1.txt
+    assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/out2.txt
+
+}
+
+@test "Two writers/single listener on bus" {
+    bats_require_minimum_version 1.5.0
+
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out.txt"
+
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 37"
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 37"
+
+    assert_exists "$TMP_DIR"/out.txt
+
+    # shellcheck disable=SC2002
+    no_of_input_lines=$(cat "$TMP_DIR"/test.txt | wc -l)
+    # shellcheck disable=SC2002
+    no_of_output_lines=$(cat "$TMP_DIR"/out.txt | wc -l)
+
+    assert_equal $(("$no_of_input_lines"*2)) "$no_of_output_lines"
+
+}
+
+@test "Out-of-range bus numbers" {
+    bats_require_minimum_version 1.5.0
+
+    run docker run porla "from_bus -1"
+
+    assert_equal "$status" 1  # Should have failed
+    assert_output --partial 'Name or service not known'
+
+
+    run docker run porla "from_bus 256"
+
+    assert_equal "$status" 1  # Should have failed
+    assert_output --partial 'Name or service not known'
+
+}
