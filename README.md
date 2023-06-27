@@ -5,7 +5,17 @@
 
 ## Motivation and purpose
 
-TODO
+`porla` was conceived as a result of our needs with regards to data logging and data "proxying" in relation to different research projects. The framework had to be:
+
+* Minimalistic, we needed something that was easy to reach for also for the smallest of tasks.
+* Versatile, we needed something that we could use for many different setups where the base assumptions did not work against us.
+* Configurable, we needed to be able to easily build data pipelines from scratch on-site ideally without resorting to re-building any software.
+* Documentable, everything needed to be documentable so that any setup could be recreated as required.
+* Non-invasive, we needed something that didnt require us to conform to any specific data format or programming language.
+* Extensible, we needed it to be easily extensible as the inherent nature of research projects means we never know what the next thing will be.
+
+With that said, `porla` is primarily designed for data logging and data proxying of line-based textual.
+
 
 ## Overview
 
@@ -15,7 +25,13 @@ TODO
 
 ### Tech stack
 
-TODO
+`porla` is built on top of three well-known technologies:
+
+* Linux pipes
+* UDP Multicast
+* Containerization (Docker containers)
+
+UDP Multicast is leveraged for the `bus` that is used to connect user-confgured `pipelines`, wherein Linux pipes are used to chain multiple commands. Each pipeline is contained within its own containerizied environment. Have a look at the `Examples` section further down.
 
 ### Performance
 
@@ -45,7 +61,7 @@ services:
 
 * **to_bus** and **from_bus**
 
-  Pipes data to or from the `bus`. Expects a single argument, the `bus_id`.
+  Pipes data to or from the `bus`. Expects a single argument, the `bus_id`, which needs to be in the range 0-255.
 
 * **record**
 
@@ -57,7 +73,7 @@ services:
 
 * **jsonify**
 
-  Parses each line according to a `parse` format specification (see https://github.com/r1chardj0n3s/parse#format-syntax). Expects a single argument, the `format specification`.
+  Parses each line according to a `parse` format specification (see https://github.com/r1chardj0n3s/parse#format-syntax) and outputs the named values as key-value pairs in a json object. Expects a single argument, the `format specification`.
 
 * **timestamp**
 
