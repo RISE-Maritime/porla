@@ -69,7 +69,7 @@ services:
 
 * **b64**
 
-  Base64 encodes (`--encode`) or decodes (`--decode`) data from STDIN to STDOUT.
+  Base64 encodes (`--encode`) or decodes (`--decode`) data from STDIN to STDOUT. Optinally takes two arguments, the `input_format_specification` and the `output_format_specification` to flexibly allow only parts of the input to be encoded/decoded.
 
 * **jsonify**
 

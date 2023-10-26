@@ -6,6 +6,8 @@ input stream is parsed according to the specification provided by the user
 and assembled into a json object.
 """
 
+# pylint: disable=duplicate-code
+
 import sys
 import json
 import logging
