@@ -14,7 +14,7 @@
 * Non-invasive, we needed something that didnt require us to conform to any specific data format or programming language.
 * Extensible, we needed it to be easily extensible as the inherent nature of research projects means we never know what the next thing will be.
 
-With that said, `porla` is primarily designed for data logging and data proxying of line-based textual.
+With that said, `porla` is primarily designed for logging and proxying of line-based, textual data.
 
 
 ## Overview
