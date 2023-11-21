@@ -93,6 +93,14 @@ services:
 
   https://linux.die.net/man/1/socat
 
+* **jq**
+
+  https://jqlang.github.io/jq/manual/v1.7/
+
+* **parallel**
+
+  https://linux.die.net/man/1/parallel
+
 ### Examples
 
 ```yaml
