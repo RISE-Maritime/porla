@@ -61,7 +61,7 @@ services:
 
 * **to_bus** and **from_bus**
 
-  Pipes data to or from the `bus`. Expects a single argument, the `bus_id`, which needs to be in the range 0-255.
+  Pipes data to or from the `bus`. Expects a single argument, the `bus_id`, which needs to be in the range 0-255. In addition, `to_bus` accepts the optional argument `--ttl` which can be used to set the TTL (Time-to-Live) of the outgoing multicast datagram, it defaults to `--ttl 0` (which constrains the traffic to the own host only).
 
 * **record**
 
@@ -86,6 +86,7 @@ services:
 * **limit**
 
   Rate limit the flow through a pipe on a line-by-line basis. Expects a single required argument, `interval`, and an optional argument, `--key` with a format specification of how to find the key of each line whereby to "group" the flow.
+
 
 ### 3rd-party tools
 
@@ -130,6 +131,12 @@ services:
         network_mode: host
         restart: always
         command: ["from_bus 3 | socat STDIN UDP4-DATAGRAM:1458"]
+
+    sink2:
+        image: ghcr.io/mo-rise/porla
+        network_mode: host
+        restart: always
+        command: ["from_bus 3 | to_bus 255 --ttl 1"]
 
     record_1:
         image: ghcr.io/mo-rise/porla

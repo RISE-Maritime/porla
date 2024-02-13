@@ -30,7 +30,7 @@ teardown() {
 
     docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 37 | record /recordings/out.txt"
 
-    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 37"
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 37 --ttl 1"
 
     assert_exists "$TMP_DIR"/out.txt
 
