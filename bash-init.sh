@@ -3,7 +3,19 @@
 set -euo pipefail
 
 function to_bus () {
-    socat STDIN "UDP4-DATAGRAM:239.111.42.$1:12737"
+    bus="$1"
+
+    #Read the argument values
+    while [ $# -gt 0 ]
+    do
+        case "$1" in
+            --ttl) ttl="$2"; shift;;
+            --) shift;;
+        esac
+        shift;
+    done
+
+    socat STDIN "UDP4-DATAGRAM:239.111.42.$bus:12737,ip-multicast-ttl=${ttl:-0}"
 }
 export to_bus
 
