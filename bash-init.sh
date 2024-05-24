@@ -2,6 +2,17 @@
 
 set -euo pipefail
 
+echoerr() { echo "$@" 1>&2; }
+
+echoerr "Porla is starting up..."
+echoerr "Executing: $BASH_EXECUTION_STRING"
+
+exit() {
+    echoerr "Porla is shutting down..."
+}
+
+trap exit SIGINT SIGTERM
+
 function to_bus () {
     bus="$1"
 
