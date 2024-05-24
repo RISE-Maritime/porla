@@ -1,5 +1,8 @@
 FROM python:3.11-slim-bullseye
 
+ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /tini
+RUN chmod +x /tini
+
 RUN apt-get update && apt-get install -y \
     socat \
     jq \
@@ -14,4 +17,4 @@ COPY bash-init.sh /bash-init.sh
 
 ENV BASH_ENV=/bash-init.sh
 
-ENTRYPOINT ["/bin/bash", "-l", "-c"]
+ENTRYPOINT ["/tini", "-g", "--", "/bin/bash", "-c"]
