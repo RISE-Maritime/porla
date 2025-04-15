@@ -39,7 +39,7 @@ TODO
 
 ## Usage
 
-It is packaged as a docker image, available here: https://github.com/orgs/MO-RISE/packages
+It is packaged as a docker image, available here: [https://github.com/orgs/MO-RISE/packages](https://github.com/RISE-Maritime/porla/pkgs/container/porla)
 
 The image expects a "run" command inputted on startup. Using docker run, this would manifest as such:
 ```
