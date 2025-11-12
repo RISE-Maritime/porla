@@ -37,7 +37,7 @@ export from_bus
 
 function record () {
     local log_path=""
-    local interval=""
+    local rotate_interval=""
     local rotate_count="7"
 
     # Parse arguments
@@ -46,8 +46,8 @@ function record () {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            --interval)
-                interval="$2"
+            --rotate-interval)
+                rotate_interval="$2"
                 shift 2
                 ;;
             --rotate-count)
@@ -60,12 +60,18 @@ function record () {
         esac
     done
 
-    # If interval is specified, configure logrotate and cronjob
-    if [ -n "$interval" ]; then
+    # If rotate_interval is specified, configure logrotate and cronjob
+    if [ -n "$rotate_interval" ]; then
+        # Ensure cron daemon is running
+        if ! pgrep -x cron > /dev/null 2>&1; then
+            cron
+            echoerr "Started cron daemon for log rotation"
+        fi
+
         # Setup logrotate configuration
         local logrotate_conf="/etc/logrotate.d/porla-$(basename "$log_path")"
         local logrotate_conf_content="$log_path {
-    $interval
+    $rotate_interval
     rotate $rotate_count
     compress
     delaycompress
@@ -89,7 +95,7 @@ function record () {
 
         # Setup cronjob
         local cron_schedule=""
-        case "$interval" in
+        case "$rotate_interval" in
             hourly)
                 cron_schedule="0 * * * *"
                 ;;
@@ -103,7 +109,7 @@ function record () {
                 cron_schedule="0 0 1 * *"
                 ;;
             *)
-                echoerr "Warning: Unknown interval '$interval'. Skipping cronjob setup."
+                echoerr "Warning: Unknown rotate interval '$rotate_interval'. Skipping cronjob setup."
                 ;;
         esac
 
