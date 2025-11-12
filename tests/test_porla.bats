@@ -151,3 +151,30 @@ teardown() {
     assert_exists "$TMP_DIR"/normal.txt
     assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/normal.txt
 }
+
+@test "Record function with rotate_interval handles container restart" {
+    bats_require_minimum_version 1.5.0
+
+    # First run - setup rotation configuration
+    run docker run -v "$TMP_DIR":/recordings --network=host porla \
+        "echo 'first run' | record /recordings/restart_test.log --rotate-interval weekly --rotate-count 5"
+
+    assert_success
+    assert_output --partial 'Logrotate configuration created'
+    assert_output --partial 'Cronjob added'
+
+    # Second run - simulate container restart with same configuration
+    # This should succeed and not fail due to existing config
+    run docker run -v "$TMP_DIR":/recordings --network=host porla \
+        "echo 'second run' | record /recordings/restart_test.log --rotate-interval weekly --rotate-count 5"
+
+    assert_success
+    assert_output --partial 'Logrotate configuration created'
+    # Should either add cronjob or report it exists
+
+    # Verify the log file was written to in both runs
+    assert_exists "$TMP_DIR"/restart_test.log
+    run cat "$TMP_DIR"/restart_test.log
+    assert_output --partial 'first run'
+    assert_output --partial 'second run'
+}
