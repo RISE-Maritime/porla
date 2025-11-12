@@ -175,3 +175,32 @@ teardown() {
     run grep -c "run" "$TMP_DIR"/restart_test.log
     assert_output "2"
 }
+
+@test "Cron and crontab work in long-running container with log rotation" {
+    bats_require_minimum_version 1.5.0
+
+    # Start a long-running container with record function
+    docker run -d --name cron_test -v "$TMP_DIR":/recordings --network=host porla \
+        "while true; do echo 'test' | record /recordings/cron_test.log --rotate-interval daily --rotate-count 5; sleep 1; done"
+
+    # Give cron time to start
+    sleep 3
+
+    # Check if cron daemon is running
+    run docker exec cron_test pgrep -x cron
+    assert_success
+
+    # Check if crontab was configured
+    run docker exec cron_test crontab -l
+    assert_success
+    assert_output --partial 'logrotate -f'
+    assert_output --partial 'porla-cron_test.log'
+
+    # Check logrotate config exists
+    run docker exec cron_test sh -c 'test -f /etc/logrotate.d/porla-cron_test.log || test -f $HOME/.porla/logrotate.d/porla-cron_test.log'
+    assert_success
+
+    # Cleanup
+    docker stop cron_test
+    docker rm cron_test
+}
