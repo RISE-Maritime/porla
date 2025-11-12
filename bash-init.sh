@@ -81,7 +81,8 @@ function record () {
         fi
 
         # Setup logrotate configuration
-        local logrotate_conf="/etc/logrotate.d/porla-$(basename "$log_path")"
+        local logrotate_conf
+        logrotate_conf="/etc/logrotate.d/porla-$(basename "$log_path")"
         local logrotate_conf_content="$log_path {
     $rotate_interval
     rotate $rotate_count

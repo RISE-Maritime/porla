@@ -103,3 +103,58 @@ teardown() {
     assert_output --partial 'Name or service not known'
 
 }
+
+@test "Record function with invalid rotate_interval" {
+    bats_require_minimum_version 1.5.0
+
+    run docker run -v "$TMP_DIR":/recordings --network=host porla "echo 'test' | record /recordings/out.txt --rotate-interval invalid"
+
+    assert_equal "$status" 1  # Should have failed
+    assert_output --partial 'Error: Invalid rotate interval'
+    assert_output --partial 'Valid intervals are: hourly, daily, weekly, monthly'
+}
+
+@test "Record function with valid rotate_interval creates logrotate config" {
+    bats_require_minimum_version 1.5.0
+
+    # Create a temporary directory for testing
+    docker run -d --name test_record -v "$TMP_DIR":/recordings --network=host porla "sleep 5 | record /recordings/test.log --rotate-interval daily --rotate-count 10"
+
+    # Give it time to set up
+    sleep 2
+
+    # Check if cron daemon is running
+    run docker exec test_record pgrep -x cron
+    assert_success
+
+    # Check if logrotate config was created (in fallback location since we don't have root)
+    run docker exec test_record test -f /root/.porla/logrotate.d/porla-test.log
+    assert_success
+
+    # Check the content of the logrotate config
+    run docker exec test_record cat /root/.porla/logrotate.d/porla-test.log
+    assert_success
+    assert_output --partial 'daily'
+    assert_output --partial 'rotate 10'
+    assert_output --partial 'compress'
+    assert_output --partial 'dateext'
+    assert_output --partial 'dateyesterday'
+    assert_output --partial 'copytruncate'
+
+    # Check if cronjob was added
+    run docker exec test_record crontab -l
+    assert_success
+    assert_output --partial 'logrotate -f'
+    assert_output --partial 'porla-test.log'
+}
+
+@test "Record function without rotate_interval works normally" {
+    bats_require_minimum_version 1.5.0
+
+    docker run -d -v "$TMP_DIR":/recordings --network=host porla "from_bus 38 | record /recordings/normal.txt"
+
+    docker run -v "$TMP_DIR":/recordings --network=host porla "cat /recordings/test.txt | to_bus 38 --ttl 1"
+
+    assert_exists "$TMP_DIR"/normal.txt
+    assert cmp --silent "$TMP_DIR"/test.txt "$TMP_DIR"/normal.txt
+}
