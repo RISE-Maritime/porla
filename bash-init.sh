@@ -86,12 +86,11 @@ function record () {
     $rotate_interval
     rotate $rotate_count
     compress
-    delaycompress    # Delays compression by one cycle to avoid issues with open file handles
     dateext          # Use date instead of number for rotated file suffix
     dateyesterday    # Use yesterday's date for the rotated file name
     missingok
     notifempty
-    copytruncate
+    copytruncate     # Copy and truncate original file to avoid breaking open file handles
 }"
 
         # Try to write to /etc/logrotate.d/, fallback to user directory if no permissions
