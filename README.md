@@ -65,7 +65,7 @@ services:
 
 * **record**
 
-  Records (appends) data from STDIN to a file. Expects a single argument, the `file_path`.
+  Records (appends) data from STDIN to a file. Expects a single required argument, the `file_path`. Optionally accepts `--interval` (hourly, daily, weekly, or monthly) and `--rotate-count` (number of rotated files to keep, defaults to 7) to configure automatic log rotation using logrotate and cronjob.
 
 * **b64**
 
@@ -144,7 +144,7 @@ services:
         restart: always
         volumes:
             - ./recordings:/recordings
-        command: ["from_bus 1 | record /recordings/bus_id_1.log"]
+        command: ["from_bus 1 | record /recordings/bus_id_1.log --interval daily --rotate-count 30"]
 
     record_2:
         image: ghcr.io/mo-rise/porla
