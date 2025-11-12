@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "rust-bin/timestamp",
     "rust-bin/shuffle",
+    "rust-bin/shuffle-optimized",
     "rust-bin/limit",
     "rust-bin/jsonify",
     "rust-bin/b64",
