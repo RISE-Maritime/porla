@@ -121,7 +121,7 @@ teardown() {
     run docker run -v "$TMP_DIR":/recordings --network=host porla \
         "echo 'test' | record /recordings/test.log --rotate-interval daily --rotate-count 10 && \
          echo '=== LOGROTATE CONFIG ===' && \
-         cat /root/.porla/logrotate.d/porla-test.log && \
+         (cat /etc/logrotate.d/porla-test.log 2>/dev/null || cat /root/.porla/logrotate.d/porla-test.log 2>/dev/null || cat \$HOME/.porla/logrotate.d/porla-test.log) && \
          echo '=== CRONTAB ===' && \
          crontab -l"
 
