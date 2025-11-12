@@ -76,8 +76,11 @@ function record () {
 
         # Ensure cron daemon is running
         if ! pgrep -x cron > /dev/null 2>&1; then
-            cron
-            echoerr "Started cron daemon for log rotation"
+            if cron 2>/dev/null; then
+                echoerr "Started cron daemon for log rotation"
+            else
+                echoerr "Warning: Failed to start cron daemon. Log rotation will not be automated."
+            fi
         fi
 
         # Setup logrotate configuration
@@ -128,8 +131,11 @@ function record () {
         local cron_cmd="logrotate -f $logrotate_conf"
         if ! crontab -l 2>/dev/null | grep -qF "$cron_cmd"; then
             # Add the cronjob
-            (crontab -l 2>/dev/null; echo "$cron_schedule $cron_cmd") | crontab -
-            echoerr "Cronjob added: $cron_schedule $cron_cmd"
+            if (crontab -l 2>/dev/null; echo "$cron_schedule $cron_cmd") | crontab - 2>/dev/null; then
+                echoerr "Cronjob added: $cron_schedule $cron_cmd"
+            else
+                echoerr "Warning: Failed to add cronjob. Log rotation will not be automated."
+            fi
         else
             echoerr "Cronjob already exists for $log_path"
         fi
