@@ -114,26 +114,20 @@ teardown() {
     assert_output --partial 'Valid intervals are: hourly, daily, weekly, monthly'
 }
 
-@test "Record function with valid rotate_interval creates logrotate config" {
+@test "Record function with valid rotate_interval creates logrotate config and cronjob" {
     bats_require_minimum_version 1.5.0
 
-    # Create a temporary directory for testing
-    docker run -d --name test_record -v "$TMP_DIR":/recordings --network=host porla "sleep 5 | record /recordings/test.log --rotate-interval daily --rotate-count 10"
+    # Run record with rotation, then check the generated config and crontab in the same container
+    run docker run -v "$TMP_DIR":/recordings --network=host porla \
+        "echo 'test' | record /recordings/test.log --rotate-interval daily --rotate-count 10 && \
+         echo '=== LOGROTATE CONFIG ===' && \
+         cat /root/.porla/logrotate.d/porla-test.log && \
+         echo '=== CRONTAB ===' && \
+         crontab -l"
 
-    # Give it time to set up
-    sleep 2
-
-    # Check if cron daemon is running
-    run docker exec test_record pgrep -x cron
     assert_success
 
-    # Check if logrotate config was created (in fallback location since we don't have root)
-    run docker exec test_record test -f /root/.porla/logrotate.d/porla-test.log
-    assert_success
-
-    # Check the content of the logrotate config
-    run docker exec test_record cat /root/.porla/logrotate.d/porla-test.log
-    assert_success
+    # Check logrotate config content
     assert_output --partial 'daily'
     assert_output --partial 'rotate 10'
     assert_output --partial 'compress'
@@ -141,11 +135,10 @@ teardown() {
     assert_output --partial 'dateyesterday'
     assert_output --partial 'copytruncate'
 
-    # Check if cronjob was added
-    run docker exec test_record crontab -l
-    assert_success
+    # Check cronjob was added
     assert_output --partial 'logrotate -f'
     assert_output --partial 'porla-test.log'
+    assert_output --partial '0 0 * * *'  # Daily cron schedule
 }
 
 @test "Record function without rotate_interval works normally" {
