@@ -62,6 +62,18 @@ function record () {
 
     # If rotate_interval is specified, configure logrotate and cronjob
     if [ -n "$rotate_interval" ]; then
+        # Validate rotate_interval
+        case "$rotate_interval" in
+            hourly|daily|weekly|monthly)
+                # Valid interval
+                ;;
+            *)
+                echoerr "Error: Invalid rotate interval '$rotate_interval'."
+                echoerr "Valid intervals are: hourly, daily, weekly, monthly"
+                return 1
+                ;;
+        esac
+
         # Ensure cron daemon is running
         if ! pgrep -x cron > /dev/null 2>&1; then
             cron
@@ -74,7 +86,9 @@ function record () {
     $rotate_interval
     rotate $rotate_count
     compress
-    delaycompress
+    delaycompress    # Delays compression by one cycle to avoid issues with open file handles
+    dateext          # Use date instead of number for rotated file suffix
+    dateyesterday    # Use yesterday's date for the rotated file name
     missingok
     notifempty
     copytruncate
@@ -93,7 +107,7 @@ function record () {
             echoerr "Logrotate configuration created at $logrotate_conf (no permissions for /etc/logrotate.d/)"
         fi
 
-        # Setup cronjob
+        # Setup cronjob - determine schedule based on validated interval
         local cron_schedule=""
         case "$rotate_interval" in
             hourly)
@@ -108,21 +122,16 @@ function record () {
             monthly)
                 cron_schedule="0 0 1 * *"
                 ;;
-            *)
-                echoerr "Warning: Unknown rotate interval '$rotate_interval'. Skipping cronjob setup."
-                ;;
         esac
 
-        if [ -n "$cron_schedule" ]; then
-            # Check if cron entry already exists
-            local cron_cmd="logrotate -f $logrotate_conf"
-            if ! crontab -l 2>/dev/null | grep -qF "$cron_cmd"; then
-                # Add the cronjob
-                (crontab -l 2>/dev/null; echo "$cron_schedule $cron_cmd") | crontab -
-                echoerr "Cronjob added: $cron_schedule $cron_cmd"
-            else
-                echoerr "Cronjob already exists for $log_path"
-            fi
+        # Check if cron entry already exists
+        local cron_cmd="logrotate -f $logrotate_conf"
+        if ! crontab -l 2>/dev/null | grep -qF "$cron_cmd"; then
+            # Add the cronjob
+            (crontab -l 2>/dev/null; echo "$cron_schedule $cron_cmd") | crontab -
+            echoerr "Cronjob added: $cron_schedule $cron_cmd"
+        else
+            echoerr "Cronjob already exists for $log_path"
         fi
     fi
 
