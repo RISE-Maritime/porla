@@ -262,7 +262,7 @@ dependencies = [
 [[package]]
 name = "gullwing"
 version = "0.9.0"
-source = "git+https://github.com/freol35241/gullwing.git#5f048df50eb929779a62a1a7a3b9a140f98331eb"
+source = "git+https://github.com/freol35241/gullwing.git#5b64c71ab3441fdfe6740a19a727eea9e2504a59"
 dependencies = [
  "lazy_static",
  "regex",
