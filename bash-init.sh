@@ -76,14 +76,9 @@ function record () {
 
         # Ensure cron daemon is running
         if ! pgrep -x cron > /dev/null 2>&1; then
-            # Create necessary directories and set permissions for cron
-            mkdir -p /var/run
-            touch /var/run/crond.pid 2>/dev/null || true
-
-            # Ensure cron spool directory has correct permissions
-            if [ -d /var/spool/cron/crontabs ]; then
-                chmod 1730 /var/spool/cron/crontabs 2>/dev/null || true
-            fi
+            # Create cron spool directory with correct permissions
+            mkdir -p /var/spool/cron/crontabs
+            chmod 1730 /var/spool/cron/crontabs 2>/dev/null || true
 
             # Start cron daemon
             if cron 2>/dev/null; then
@@ -146,16 +141,18 @@ function record () {
         # Setup cronjob - only if cron daemon is running
         if pgrep -x cron > /dev/null 2>&1; then
             local cron_cmd="logrotate -f $logrotate_conf"
-            if ! crontab -l 2>/dev/null | grep -qF "$cron_cmd"; then
-                # Add the cronjob
-                if (crontab -l 2>/dev/null; echo "$cron_schedule $cron_cmd") | crontab - 2>/dev/null; then
-                    echoerr "Cronjob added: $cron_schedule $cron_cmd"
-                else
-                    echoerr "Warning: Failed to add cronjob. Log rotation will not be automated."
-                    echoerr "You can manually rotate logs with: logrotate -f $logrotate_conf"
-                fi
-            else
+            local crontab_file="/var/spool/cron/crontabs/root"
+            local cron_entry="$cron_schedule $cron_cmd"
+
+            # Check if cron entry already exists
+            if [ -f "$crontab_file" ] && grep -qF "$cron_cmd" "$crontab_file" 2>/dev/null; then
                 echoerr "Cronjob already exists for $log_path"
+            else
+                # Add the cronjob by writing directly to crontab file
+                mkdir -p "$(dirname "$crontab_file")"
+                echo "$cron_entry" >> "$crontab_file"
+                chmod 0600 "$crontab_file"
+                echoerr "Cronjob added: $cron_entry"
             fi
         else
             echoerr "Warning: Cron daemon not running. Log rotation will not be automated."
