@@ -37,8 +37,9 @@ export from_bus
 
 function record () {
     local log_path=""
-    local rotate_interval=""
+    local rotate_at=""
     local rotate_count="7"
+    local date_format="-%Y%m%d"
 
     # Parse arguments
     log_path="$1"
@@ -46,12 +47,16 @@ function record () {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            --rotate-interval)
-                rotate_interval="$2"
+            --rotate-at)
+                rotate_at="$2"
                 shift 2
                 ;;
             --rotate-count)
                 rotate_count="$2"
+                shift 2
+                ;;
+            --date-format)
+                date_format="$2"
                 shift 2
                 ;;
             *)
@@ -60,25 +65,43 @@ function record () {
         esac
     done
 
-    # If rotate_interval is specified, configure logrotate and cronjob
-    if [ -n "$rotate_interval" ]; then
-        # Validate rotate_interval
-        case "$rotate_interval" in
-            hourly|daily|weekly|monthly)
-                # Valid interval
-                ;;
-            *)
-                echoerr "Error: Invalid rotate interval '$rotate_interval'."
-                echoerr "Valid intervals are: hourly, daily, weekly, monthly"
-                return 1
-                ;;
-        esac
+    # If rotate_at is specified, configure logrotate and cronjob
+    if [ -n "$rotate_at" ]; then
+        # Basic validation of cron expression (should have 5 fields)
+        local field_count
+        field_count=$(echo "$rotate_at" | awk '{print NF}')
+        if [ "$field_count" -ne 5 ]; then
+            echoerr "Error: Invalid cron expression '$rotate_at'."
+            echoerr "Cron expression must have exactly 5 fields: minute hour day month weekday"
+            echoerr "Examples:"
+            echoerr "  '0 * * * *'     - Every hour at minute 0"
+            echoerr "  '0 0 * * *'     - Daily at midnight"
+            echoerr "  '0 0 * * 0'     - Weekly on Sunday at midnight"
+            echoerr "  '0 0 1 * *'     - Monthly on the 1st at midnight"
+            echoerr "  '*/15 * * * *'  - Every 15 minutes"
+            return 1
+        fi
+
+        # Validate date format contains at least one % character
+        if [[ ! "$date_format" =~ % ]]; then
+            echoerr "Error: Invalid date format '$date_format'."
+            echoerr "Date format must contain at least one % directive (strftime format)"
+            echoerr "Examples:"
+            echoerr "  '-%Y%m%d'        - Default: -20251118"
+            echoerr "  '-%Y-%m-%d'      - With dashes: -2025-11-18"
+            echoerr "  '-%Y%m%d-%H%M%S' - With time: -20251118-143025"
+            return 1
+        fi
 
         # Ensure cron daemon is running
         if ! pgrep -x cron > /dev/null 2>&1; then
-            # Create cron spool directory with correct permissions
+            # Create necessary directories for cron
+            mkdir -p /var/run
             mkdir -p /var/spool/cron/crontabs
             chmod 1730 /var/spool/cron/crontabs 2>/dev/null || true
+
+            # Create pid file if it doesn't exist
+            touch /var/run/crond.pid 2>/dev/null || true
 
             # Start cron daemon
             if cron 2>/dev/null; then
@@ -97,15 +120,35 @@ function record () {
         # Setup logrotate configuration
         local logrotate_conf
         logrotate_conf="/etc/logrotate.d/porla-$(basename "$log_path")"
+
+        # Extract file extension for preservation
+        local filename
+        filename=$(basename "$log_path")
+        local extension=""
+        if [[ "$filename" == *.* ]]; then
+            extension=".${filename##*.}"
+        fi
+
         local logrotate_conf_content="$log_path {
-    $rotate_interval
+    su root root
+    olddir historic
+    createolddir 755 root root"
+
+        # Add extension directive if file has an extension
+        if [ -n "$extension" ]; then
+            logrotate_conf_content="$logrotate_conf_content
+    extension $extension"
+        fi
+
+        logrotate_conf_content="$logrotate_conf_content
+    dateformat $date_format
     rotate $rotate_count
     compress
-    dateext          # Use date instead of number for rotated file suffix
-    dateyesterday    # Use yesterday's date for the rotated file name
+    dateext
+    dateyesterday
     missingok
     notifempty
-    copytruncate     # Copy and truncate original file to avoid breaking open file handles
+    copytruncate
 }"
 
         # Try to write to /etc/logrotate.d/, fallback to user directory if no permissions
@@ -121,28 +164,11 @@ function record () {
             echoerr "Logrotate configuration created at $logrotate_conf (no permissions for /etc/logrotate.d/)"
         fi
 
-        # Setup cronjob - determine schedule based on validated interval
-        local cron_schedule=""
-        case "$rotate_interval" in
-            hourly)
-                cron_schedule="0 * * * *"
-                ;;
-            daily)
-                cron_schedule="0 0 * * *"
-                ;;
-            weekly)
-                cron_schedule="0 0 * * 0"
-                ;;
-            monthly)
-                cron_schedule="0 0 1 * *"
-                ;;
-        esac
-
         # Setup cronjob - only if cron daemon is running
         if pgrep -x cron > /dev/null 2>&1; then
-            local cron_cmd="logrotate -f $logrotate_conf"
+            local cron_cmd="/usr/sbin/logrotate -f $logrotate_conf"
             local crontab_file="/var/spool/cron/crontabs/root"
-            local cron_entry="$cron_schedule $cron_cmd"
+            local cron_entry="$rotate_at $cron_cmd"
 
             # Check if cron entry already exists
             if [ -f "$crontab_file" ] && grep -qF "$cron_cmd" "$crontab_file" 2>/dev/null; then
@@ -153,6 +179,14 @@ function record () {
                 echo "$cron_entry" >> "$crontab_file"
                 chmod 0600 "$crontab_file"
                 echoerr "Cronjob added: $cron_entry"
+
+                # Restart cron daemon to pick up the new crontab
+                # HUP signal is not sufficient when cron is started before crontab file exists
+                if pkill cron 2>/dev/null && sleep 0.5 && cron 2>/dev/null; then
+                    echoerr "Cron daemon restarted to apply new configuration"
+                else
+                    echoerr "Warning: Could not restart cron daemon. Changes may not take effect until container restart."
+                fi
             fi
         else
             echoerr "Warning: Cron daemon not running. Log rotation will not be automated."
