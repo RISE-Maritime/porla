@@ -23,10 +23,11 @@ args = parser.parse_args()
 
 if args.epoch:
     stamp = lambda: f"{time.time():.6f}"
-
 elif args.rfc3339:
     stamp = lambda: datetime.now(timezone.utc).isoformat()
-
+else:
+    # This should never happen due to required=True on mutually_exclusive_group
+    raise ValueError("Either --epoch or --rfc3339 must be specified")
 
 for line in sys.stdin:
     sys.stdout.write(f"{stamp()} {line}")
