@@ -65,7 +65,12 @@ services:
 
 * **record**
 
-  Records (appends) data from STDIN to a file. Expects a single argument, the `file_path`.
+  Records (appends) data from STDIN to a file. Expects a single required argument, the `file_path`. Optionally accepts:
+  - `--rotate-at` (a cron expression for when to rotate logs)
+  - `--rotate-count` (number of rotated files to keep, defaults to 7)
+  - `--date-format` (strftime format for rotated file dates, defaults to `-%Y%m%d`)
+
+  The cron expression must have exactly 5 fields: minute, hour, day, month, and weekday (e.g., `'0 0 * * *'` for daily at midnight, `'*/15 * * * *'` for every 15 minutes). Rotated files are stored in a `historic` subdirectory next to the original log file, with the original file extension preserved (e.g., `historic/bus_id_1-20251118.log.gz`).
 
 * **b64**
 
@@ -144,7 +149,7 @@ services:
         restart: always
         volumes:
             - ./recordings:/recordings
-        command: ["from_bus 1 | record /recordings/bus_id_1.log"]
+        command: ["from_bus 1 | record /recordings/bus_id_1.log --rotate-at '0 0 * * *' --rotate-count 30 --date-format '-%Y-%m-%d'"]
 
     record_2:
         image: ghcr.io/mo-rise/porla

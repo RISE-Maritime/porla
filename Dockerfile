@@ -7,6 +7,8 @@ RUN apt-get update && apt-get install -y \
     socat \
     jq \
     parallel \
+    logrotate \
+    cron \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
