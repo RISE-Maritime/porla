@@ -51,7 +51,7 @@ Using docker-compose it would look like this:
 version: '3'
 services:
     service_1:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["<command>"]
@@ -93,6 +93,34 @@ services:
   Rate limit the flow through a pipe on a line-by-line basis. Expects a single required argument, `interval`, and an optional argument, `--key` with a format specification of how to find the key of each line whereby to "group" the flow.
 
 
+### Transport tools
+
+* **mqtt**
+
+  Command-line tool for publishing and subscribing to MQTT. See https://github.com/MO-RISE/mqtt-cli for full documentation.
+
+  Subscribe example: `mqtt subscribe -t my/topic`
+
+  Publish example: `echo "hello" | mqtt publish -t my/topic`
+
+* **mosquitto_sub** and **mosquitto_pub**
+
+  Standard Mosquitto MQTT clients. See https://mosquitto.org/man/mosquitto_sub-1.html and https://mosquitto.org/man/mosquitto_pub-1.html
+
+  Subscribe example: `mosquitto_sub -h broker -t my/topic`
+
+  Publish example: `mosquitto_pub -h broker -t my/topic -l` (reads lines from stdin)
+
+* **zenoh**
+
+  Command-line tool for interacting with a Zenoh session. See https://github.com/RISE-Maritime/zenoh-cli for full documentation.
+
+  Subscribe example: `zenoh subscribe -k my/key/expression`
+
+  Put example: `echo "hello" | zenoh put -k my/key/expression`
+
+  Get example: `zenoh get -k my/key/expression`
+
 ### 3rd-party tools
 
 * **socat**
@@ -114,37 +142,37 @@ version: '3.8'
 
 services:
     source_1:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["socat UDP4-RECV:1457,reuseaddr STDOUT | timestamp | to_bus 1"]
 
     transform_1:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["from_bus 1 | jsonify '{} {name} {value}' | to_bus 2"]
 
     transform_2:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["from_bus 2 | b64 --encode | to_bus 3"]
 
     sink_1:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["from_bus 3 | socat STDIN UDP4-DATAGRAM:1458"]
 
     sink2:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         command: ["from_bus 3 | to_bus 255 --ttl 1"]
 
     record_1:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         volumes:
@@ -152,7 +180,7 @@ services:
         command: ["from_bus 1 | record /recordings/bus_id_1.log --rotate-at '0 0 * * *' --rotate-count 30 --date-format '-%Y-%m-%d'"]
 
     record_2:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         volumes:
@@ -160,13 +188,118 @@ services:
         command: ["from_bus 2 | record /recordings/bus_id_2.log"]
 
     record_3:
-        image: ghcr.io/mo-rise/porla
+        image: ghcr.io/rise-maritime/porla
         network_mode: host
         restart: always
         volumes:
             - ./recordings:/recordings
         command: ["from_bus 3 | record /recordings/bus_id_3.log"]
 
+```
+
+#### MQTT Pipeline Example
+
+This example demonstrates subscribing to an MQTT topic, transforming the data, and publishing to another topic:
+
+```yaml
+version: '3.8'
+
+services:
+    mqtt_source:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        environment:
+            - MQTT_HOST=broker.example.com
+        command: ["mqtt subscribe -t sensors/temperature | timestamp | to_bus 10"]
+
+    transform:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["from_bus 10 | jsonify '{timestamp} {value}' | jq -c '{temp: .value, ts: .timestamp}' | to_bus 11"]
+
+    mqtt_sink:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        environment:
+            - MQTT_HOST=broker.example.com
+        command: ["from_bus 11 | mqtt publish -t processed/temperature"]
+
+    record:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        volumes:
+            - ./recordings:/recordings
+        command: ["from_bus 10 | record /recordings/temperature.log"]
+```
+
+#### Zenoh Pipeline Example
+
+This example demonstrates subscribing to a Zenoh key expression, processing data, and publishing back:
+
+```yaml
+version: '3.8'
+
+services:
+    zenoh_source:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["zenoh subscribe -k sensors/** | timestamp | to_bus 20"]
+
+    transform:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["from_bus 20 | jq -c '. + {processed: true}' | to_bus 21"]
+
+    zenoh_sink:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["from_bus 21 | zenoh put -k processed/data"]
+```
+
+#### Combined MQTT and Zenoh Pipeline
+
+This example demonstrates bridging data between MQTT and Zenoh:
+
+```yaml
+version: '3.8'
+
+services:
+    # MQTT to Zenoh bridge
+    mqtt_to_zenoh:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        environment:
+            - MQTT_HOST=mqtt-broker.local
+        command: ["mqtt subscribe -t legacy/sensors/# | to_bus 30"]
+
+    zenoh_publisher:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["from_bus 30 | zenoh put -k modern/sensors/data"]
+
+    # Zenoh to MQTT bridge
+    zenoh_to_mqtt:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        command: ["zenoh subscribe -k commands/** | to_bus 31"]
+
+    mqtt_publisher:
+        image: ghcr.io/rise-maritime/porla
+        network_mode: host
+        restart: always
+        environment:
+            - MQTT_HOST=mqtt-broker.local
+        command: ["from_bus 31 | mosquitto_pub -h mqtt-broker.local -t legacy/commands -l"]
 ```
 
 ## Extensions
