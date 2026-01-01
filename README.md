@@ -33,6 +33,33 @@ With that said, `porla` is primarily designed for logging and proxying of line-b
 
 UDP Multicast is leveraged for the `bus` that is used to connect user-confgured `pipelines`, wherein Linux pipes are used to chain multiple commands. Each pipeline is contained within its own containerizied environment. Have a look at the `Examples` section further down.
 
+### Architecture
+
+`porla` follows a two-tier architecture separating domain-agnostic tooling from domain-specific extensions:
+
+```
+porla (base)
+├── I/O: serial, UDP, TCP (via socat)
+├── Transport: MQTT, Zenoh
+├── Transform: JSON, base64, timestamps, shuffle
+└── Core: bus, record, limit
+
+porla-{domain} (extensions)
+└── Domain-specific formats and protocols
+```
+
+**What belongs in the base image (domain-agnostic):**
+- Generic transports (MQTT, Zenoh, UDP, TCP)
+- Generic transformations (JSON, base64, timestamps)
+- Core pipeline tools (bus, record, limit)
+
+**What belongs in domain extensions:**
+- Data format parsers/encoders (e.g., NMEA, AIS, SignalK)
+- Domain-specific protocol handlers
+- Format converters between domain standards
+
+This separation allows the base image to remain lightweight and broadly applicable, while domain-specific tooling is available through dedicated extension images.
+
 ### Performance
 
 TODO
@@ -304,10 +331,34 @@ services:
 
 ## Extensions
 
-Extensions to `porla` are simply other docker images, using the `porla` image as the base image, adding other binaries/command-line tools accessible to the end user. For examples, see https://github.com/topics/porla-extension
+Extensions provide domain-specific tooling that builds on the `porla` base image. They are Docker images that add specialized parsers, encoders, and protocol handlers for specific domains.
 
-Generally, for convenience and to avoid confusion, extensions to `porla` should:
-* be named as `porla-<extension-name>`
-* add the topic `porla-extension` to the repository to be visible in
+For available domain-specific extensions, see repositories tagged with [porla-extension](https://github.com/topics/porla-extension).
 
-For a quick and easy start, use the [repository template](https://github.com/MO-RISE/porla-extension-template).
+### When to create an extension
+
+Create a new extension when you need:
+- Domain-specific data format parsers/encoders (e.g., NMEA, AIS, SignalK for maritime)
+- Specialized protocol handlers for a particular industry
+- Format converters between domain standards
+
+**Do not create an extension for:**
+- Generic transports or transformations — these should be proposed for inclusion in the base image
+- Tools that are broadly applicable across domains
+
+### Creating an extension
+
+1. Use the [porla-extension-template](https://github.com/MO-RISE/porla-extension-template) as a starting point
+2. Name your repository `porla-<domain>` (e.g., `porla-maritime`, `porla-automotive`)
+3. Add the `porla-extension` topic to your repository for discoverability
+4. Use `ghcr.io/rise-maritime/porla` as the base image in your Dockerfile
+
+Example extension Dockerfile:
+```dockerfile
+FROM ghcr.io/rise-maritime/porla:latest
+
+COPY requirements.txt requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY --chmod=555 ./bin/* /usr/local/bin/
+```
