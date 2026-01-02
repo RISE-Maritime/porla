@@ -166,6 +166,16 @@ services:
 
   https://github.com/vi/websocat
 
+* **modbus**
+
+  Command-line tool for reading and writing Modbus registers over TCP or RTU (serial). Supports encoding/decoding of types larger than 16 bits (floats, 32-bit integers, etc.).
+
+  https://github.com/favalex/modbus-cli
+
+  Read example: `modbus -s 1 192.168.1.100:502 h@0/f` (read holding register 0 as float)
+
+  Write example: `modbus -s 1 192.168.1.100:502 h@0=42` (write value 42 to holding register 0)
+
 ### Examples
 
 ```yaml
