@@ -162,6 +162,10 @@ services:
 
   https://linux.die.net/man/1/parallel
 
+* **websocat**
+
+  https://github.com/vi/websocat
+
 ### Examples
 
 ```yaml
