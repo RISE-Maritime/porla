@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bullseye
+FROM python:3.13-slim-bookworm
 
 ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /tini
 RUN chmod +x /tini
@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     parallel \
     logrotate \
     cron \
+    mosquitto-clients \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
