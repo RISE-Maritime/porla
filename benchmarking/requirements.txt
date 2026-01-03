@@ -1,0 +1,2 @@
+# Requirements for porla benchmarking tools
+plotille>=5.0.0
